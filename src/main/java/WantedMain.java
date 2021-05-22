@@ -3,6 +3,8 @@ import com.willfp.eco.core.EcoPlugin;
 import com.willfp.eco.core.extensions.Extension;
 import com.willfp.ecoenchants.enchantments.EcoEnchant;
 
+import java.io.IOException;
+
 public class WantedMain extends Extension {
     public static final EcoEnchant WANTED = new Wanted();
 

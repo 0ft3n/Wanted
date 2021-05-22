@@ -1,31 +1,36 @@
 import com.willfp.eco.core.integrations.antigrief.AntigriefManager;
 import com.willfp.eco.util.NumberUtils;
+import com.willfp.ecoenchants.EcoEnchantsPlugin;
 import com.willfp.ecoenchants.enchantments.EcoEnchant;
 import com.willfp.ecoenchants.enchantments.EcoEnchants;
 import com.willfp.ecoenchants.enchantments.meta.EnchantmentType;
 import com.willfp.ecoenchants.enchantments.util.EnchantChecks;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Wanted extends EcoEnchant {
 
-    private ArrayList<LivingEntity> friends = new ArrayList<>();
-
     public Wanted(){
         super("wanted", EnchantmentType.SPECIAL);
     }
+
+    static Map<String,ArrayList<String>> friends = new HashMap<>();
+    static ArrayList<String> list;
+    NamespacedKey key = new NamespacedKey(this.getPlugin(),"friends");
 
     @EventHandler
     public void friendEdit(final PlayerInteractEntityEvent event) {
@@ -37,6 +42,8 @@ public class Wanted extends EcoEnchant {
         Player player = event.getPlayer();
         Player friend = (Player) event.getRightClicked();
 
+        PersistentDataContainer container = player.getPersistentDataContainer();
+
         if (!EnchantChecks.mainhand(player, this)) {
             return;
         }
@@ -45,16 +52,34 @@ public class Wanted extends EcoEnchant {
             return;
         }
 
-        if (friends.contains(friend)){
-            friends.remove(friend);
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&',this.getConfig().getString(EcoEnchants.CONFIG_LOCATION + "message-friend-removed").replace("{p}",friend.getDisplayName())));
+        StringBuilder res = new StringBuilder();
+
+        if (container.has(key,PersistentDataType.STRING)){
+            ArrayList<String> list = new ArrayList<String>(Arrays.asList(container.get(key, PersistentDataType.STRING).split(",")));
+            if (list.contains(friend.getName())){
+                list.remove(friend.getName());
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&',this.getConfig().getString(EcoEnchants.CONFIG_LOCATION + "message-friend-removed").replace("{p}",friend.getDisplayName())));
+            }
+            else {
+                list.add(friend.getName());
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&',this.getConfig().getString(EcoEnchants.CONFIG_LOCATION + "message-friend-added").replace("{p}",friend.getDisplayName())));
+            }
+            if (list.isEmpty()){
+                container.remove(key);
+                return;
+            }
+            for (int i = 0; i<list.size()-1;i++){
+                res.append(list.get(i)).append(",");
+            }
+            res.append(list.get(list.size()-1));
+            container.set(key,PersistentDataType.STRING,res.toString());
         }
         else {
-            friends.add(friend);
             player.sendMessage(ChatColor.translateAlternateColorCodes('&',this.getConfig().getString(EcoEnchants.CONFIG_LOCATION + "message-friend-added").replace("{p}",friend.getDisplayName())));
+            res.append(friend.getName());
+            container.set(key,PersistentDataType.STRING,res.toString());
         }
         event.setCancelled(true);
-
     }
 
     @EventHandler
@@ -106,7 +131,17 @@ public class Wanted extends EcoEnchant {
                     .map(entity -> (LivingEntity) entity)
                     .filter(entity -> !entity.equals(player))
                     .filter(entity -> entity instanceof Player)
-                    .filter(entity -> !(friends.contains(entity)))
+                    .filter(entity -> {
+                        PersistentDataContainer container = player.getPersistentDataContainer();
+                        if (container.has(key,PersistentDataType.STRING)){
+                            ArrayList<String> list = new ArrayList<String>(Arrays.asList(container.get(key, PersistentDataType.STRING).split(",")));
+                            if (list.contains(entity.getName())){
+                                return false;
+                            }
+                            return true;
+                        }
+                        return true;
+                    })
                     .filter(entity -> AntigriefManager.canInjure(player, entity))
                     .filter(entity -> {
                         if (entity instanceof Player) {
