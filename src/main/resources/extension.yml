@@ -1,0 +1,3 @@
+name: Wanted
+main: WantedMain
+version: ${projectVersion}
