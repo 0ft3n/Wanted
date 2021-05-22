@@ -106,7 +106,7 @@ public class Wanted extends EcoEnchant {
                     .map(entity -> (LivingEntity) entity)
                     .filter(entity -> !entity.equals(player))
                     .filter(entity -> entity instanceof Player)
-                    .filter(entity -> friends.contains(entity))
+                    .filter(entity -> !(friends.contains(entity)))
                     .filter(entity -> AntigriefManager.canInjure(player, entity))
                     .filter(entity -> {
                         if (entity instanceof Player) {
