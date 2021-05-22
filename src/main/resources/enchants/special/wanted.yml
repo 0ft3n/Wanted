@@ -3,7 +3,7 @@
 #
 
 name: "Wanted"
-description: Arrows aim at your enemies (players only)
+description: Arrows aim at your enemies (players only). Shift-Right-Click to add/remove player from whitelist
 enabled: true
 
 obtaining:
@@ -26,3 +26,5 @@ config:
   require-full-force: true # Require full bow pull (works with rapid) If true, then scale-on-force is irrelevant.
   check-ticks: 10 # Ticks between rotations
   checks-per-level: 2 # Amount of times to rotate arrow per level (prevents "floating")
+  message-friend-added: "&8(&c&l!&8) &7Игрок &6{p} &7был успешно добавлен в белый список"
+  message-friend-removed: "&8(&c&l!&8) &7Игрок &6{p} &7был успешно удалён из белого списка"

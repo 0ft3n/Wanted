@@ -4,22 +4,57 @@ import com.willfp.ecoenchants.enchantments.EcoEnchant;
 import com.willfp.ecoenchants.enchantments.EcoEnchants;
 import com.willfp.ecoenchants.enchantments.meta.EnchantmentType;
 import com.willfp.ecoenchants.enchantments.util.EnchantChecks;
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Wanted extends EcoEnchant {
 
+    private ArrayList<LivingEntity> friends = new ArrayList<>();
+
     public Wanted(){
         super("wanted", EnchantmentType.SPECIAL);
+    }
+
+    @EventHandler
+    public void friendEdit(final PlayerInteractEntityEvent event) {
+
+        if (!(event.getRightClicked() instanceof Player)){
+            return;
+        }
+
+        Player player = event.getPlayer();
+        Player friend = (Player) event.getRightClicked();
+
+        if (!EnchantChecks.mainhand(player, this)) {
+            return;
+        }
+
+        if (!player.isSneaking()){
+            return;
+        }
+
+        if (friends.contains(friend)){
+            friends.remove(friend);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&',this.getConfig().getString(EcoEnchants.CONFIG_LOCATION + "message-friend-removed").replace("{p}",friend.getDisplayName())));
+        }
+        else {
+            friends.add(friend);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&',this.getConfig().getString(EcoEnchants.CONFIG_LOCATION + "message-friend-added").replace("{p}",friend.getDisplayName())));
+        }
+        event.setCancelled(true);
+
     }
 
     @EventHandler
@@ -71,6 +106,7 @@ public class Wanted extends EcoEnchant {
                     .map(entity -> (LivingEntity) entity)
                     .filter(entity -> !entity.equals(player))
                     .filter(entity -> entity instanceof Player)
+                    .filter(entity -> friends.contains(entity))
                     .filter(entity -> AntigriefManager.canInjure(player, entity))
                     .filter(entity -> {
                         if (entity instanceof Player) {
